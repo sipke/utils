@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+echo -n "$1 (y/n)? "
+read answer
+if echo "$answer" | grep -iq "^y" ;then
+    echo yes
+else
+    echo no
+fi
