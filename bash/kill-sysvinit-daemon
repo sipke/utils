@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# Convenience script which forcefully (ungracefully) stop a daemon
+# as specified on the command line then restarts it if user presses
+# Ctrl-C before a timeout period.
+# Assumes sysv init system, and a daemon which uses /var/run/?.pid file.
+# Useful for daemons that have /etc/init.d scripts for which restart
+# does not work: i.e. this works as a poor mans stop then start.
+#
+
+daemon=$1
+ctrlC()
+(
+    echo
+    echo "$0: Watchdog kill cancelled"
+    printf "$0: "
+    /etc/init.d/$daemon start
+)
+
+#
+# Modified from
+# https://www.cyberciti.biz/faq/how-to-display-countdown-timer-in-bash-shell-script-running-on-linuxunix/
+#
+countdown()
+(
+    secs=$1
+    while [ $secs -gt 0 ]
+    do
+      sleep 1 
+      secs=$(($secs - 1))
+      printf "\r$0: %03d" $((secs))
+    done
+    echo
+)
+
+trap ctrlC INT 
+pid=$(cat /var/run/$daemon.pid)
+if [ -z "$pid" ]; then
+    echo "$0: Error daemon pid not found"
+    exit 1
+fi
+running=$(kill -0 $pid)
+if [ $running != 0 ]; then
+    echo "$0: Error $daemon pid ($pid) not running"
+    exit 1
+fi
+kill -9 $pid
+count=20
+echo "$0: Killed $daemon pid=$pid"
+echo "$0: Ctrl-C if you want to restart it before $count seconds"
+countdown $count
+
